@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Tasks</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Email Task Processor</h1>
+        <button id="fetch-emails-button">Fetch Emails</button>
+        <div id="loading-state" class="hidden">
+            <div class="spinner"></div>
+            <p id="loading-message">Fetching emails...</p>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <!-- Modal -->
+    <div id="task-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Task Details</h2>
+            <p><strong>From:</strong> <span id="modal-from"></span></p>
+            <p><strong>Subject:</strong> <span id="modal-subject"></span></p>
+            <h3>Details</h3>
+            <div id="modal-detailed-tasks"></div>
+        </div>
+    </div>
+
+    <script src="static/script.js"></script>
+</body>
+</html>
