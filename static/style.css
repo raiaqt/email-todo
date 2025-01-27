@@ -221,3 +221,7 @@ button:disabled {
 label {
     display: flex;
 }
+
+input[type="checkbox"] {
+    margin-right: 15px;
+}

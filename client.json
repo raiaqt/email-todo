@@ -1,0 +1,12 @@
+{
+  "web": {
+    "client_id": "1062676216251-engs4s9u719pkca0nh2fjid663jkdqca.apps.googleusercontent.com",
+    "project_id": "email-todo-449010",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "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",
+    "redirect_uris": ["http://localhost:5173"],
+    "javascript_origins": ["http://localhost:5173"]
+  }
+}

@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 from tasks.email_reader import fetch_emails
 from tasks.ai_processor import extract_tasks, summarize_tasks, extract_deadline_with_chatgpt
 import os
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def index():
@@ -12,8 +14,14 @@ def index():
 @app.route("/fetch-emails", methods=["POST"])
 def fetch_and_process_emails():
     try:
+        data = request.json
+        access_token = data.get("access_token")
+
+        if not access_token:
+            return jsonify({"error": "Access token is required."}), 400
+        
         # Step 1: Fetch emails
-        emails = fetch_emails()
+        emails = fetch_emails(access_token)
 
         # Step 2: Process each email
         actionable_tasks = []
@@ -42,5 +50,5 @@ def fetch_and_process_emails():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5173))  # Use the PORT environment variable or default to 5173
+    port = int(os.getenv("PORT", 5174))  # Use the PORT environment variable or default to 5173
     app.run(host="0.0.0.0", port=port)
