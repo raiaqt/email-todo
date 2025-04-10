@@ -83,7 +83,7 @@ def fetch_emails(access_token):
             })
 
         logging.info("Fetched %d emails.", len(emails))
-        return emails
+        return emails[:10]
 
     except Exception as e:
         logging.error("An error occurred while fetching emails: %s", str(e))
