@@ -3,6 +3,7 @@ import base64
 from datetime import datetime, timedelta, timezone
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import logging
 
 # Scopes required for Gmail API
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -11,7 +12,7 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TOKEN_URI = os.getenv("TOKEN_URI")
 
 def fetch_emails(access_token):
-    print("Fetching emails using access token...")
+    logging.debug("Fetching emails using provided access token.")
 
     # Create credentials from the access token
     creds = Credentials(
@@ -27,6 +28,7 @@ def fetch_emails(access_token):
 
     # Calculate the date for filtering emails from the past day
     one_day_ago = int((datetime.now(timezone.utc) - timedelta(days=1)).timestamp())
+    logging.debug("Fetching emails after timestamp: %d", one_day_ago)
 
     # Use Gmail API to search for emails from the past day
     try:
@@ -37,11 +39,12 @@ def fetch_emails(access_token):
 
         messages = results.get("messages", [])
         if not messages:
-            print("No emails found.")
+            logging.info("No emails found.")
             return []
 
         emails = []
         for msg in messages:
+            logging.debug("Processing message with id: %s", msg["id"])
             # Fetch email details
             msg_data = service.users().messages().get(userId="me", id=msg["id"]).execute()
             
@@ -51,6 +54,7 @@ def fetch_emails(access_token):
             sender = next((h["value"] for h in headers if h["name"] == "From"), "Unknown Sender")
             date_str = next((h["value"] for h in headers if h["name"] == "Date"), None)
             size = int(msg_data.get("sizeEstimate", 0))
+            logging.debug("Email details - Subject: %s, From: %s, Date: %s, Size: %d", subject, sender, date_str if date_str else "None", size)
 
             # Parse the email date
             email_time = datetime.now(timezone.utc)
@@ -58,7 +62,7 @@ def fetch_emails(access_token):
                 try:
                     email_time = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
                 except ValueError:
-                    pass  # If parsing fails, default to now
+                    logging.warning("Unable to parse date: %s, defaulting to current time", date_str)
 
             # Decode the body (if available)
             body = ""
@@ -66,6 +70,7 @@ def fetch_emails(access_token):
                 for part in msg_data["payload"]["parts"]:
                     if part.get("mimeType") == "text/plain":
                         body = base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8", errors="ignore")
+                        logging.debug("Decoded email body for message id: %s", msg["id"])
                         break
 
             # Append to the email list
@@ -77,11 +82,11 @@ def fetch_emails(access_token):
                 "body": body,
             })
 
-        print(f"Fetched {len(emails)} emails.")
+        logging.info("Fetched %d emails.", len(emails))
         return emails
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.error("An error occurred while fetching emails: %s", str(e))
         return []
 
 # Example usage
@@ -89,11 +94,13 @@ if __name__ == "__main__":
     # Set your access token here (replace with actual token)
     ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
     if not ACCESS_TOKEN:
-        print("Please set the ACCESS_TOKEN environment variable.")
+        logging.error("Please set the ACCESS_TOKEN environment variable.")
     else:
-        emails = fetch_emails_with_token(ACCESS_TOKEN)
+        logging.info("Access token found; fetching emails.")
+        emails = fetch_emails(ACCESS_TOKEN)
+        logging.info("Processing %d emails in main block.", len(emails))
         for email_data in emails:
-            print(f"Subject: {email_data['subject']}")
-            print(f"From: {email_data['from']}")
-            print(f"Size: {email_data['size']} bytes")
-            print("-" * 50)
+            logging.info("Subject: %s", email_data['subject'])
+            logging.info("From: %s", email_data['from'])
+            logging.info("Size: %d bytes", email_data['size'])
+            logging.info("%s", "-" * 50)

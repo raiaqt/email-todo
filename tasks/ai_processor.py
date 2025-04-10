@@ -1,12 +1,13 @@
 import os
 import openai
 from datetime import datetime, timedelta
+import logging
 
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def extract_tasks(email_body):
-    print("Processing emails...")
+    logging.debug("Processing emails...")
 
     messages = [
         {
@@ -38,7 +39,7 @@ def extract_tasks(email_body):
     )
 
     tasks = response['choices'][0]['message']['content'].strip()
-    print("Extracted Tasks:\n", tasks)
+    logging.debug("Extracted Tasks:\n%s", tasks)
     return tasks
 
 
@@ -47,7 +48,7 @@ def extract_deadline_with_chatgpt(tasks):
     Uses ChatGPT to extract and normalize deadlines from the task list.
     Converts phrases like 'tomorrow' or 'next week' into actual dates.
     """
-    print("Extracting deadlines...")
+    logging.debug("Extracting deadlines...")
 
     messages = [
          {
@@ -74,7 +75,7 @@ def extract_deadline_with_chatgpt(tasks):
     )
 
     deadlines = response['choices'][0]['message']['content'].strip()
-    print("Extracted Deadlines:\n", deadlines)
+    logging.debug("Extracted Deadlines:\n%s", deadlines)
     return deadlines
 
 
@@ -82,7 +83,7 @@ def summarize_tasks(tasks,):
     """
     Summarizes tasks into a single sentence and includes the deadline if available.
     """
-    print("Summarizing tasks...")
+    logging.debug("Summarizing tasks...")
 
     messages = [
           {
@@ -108,11 +109,26 @@ def summarize_tasks(tasks,):
     )
 
     summary = response['choices'][0]['message']['content'].strip()
-    print("Task Summary:\n", summary)
+    logging.debug("Task Summary:\n%s", summary)
     return summary
 
 
-# Example usage
+# NEW FUNCTION: Filter emails based on importance
+def is_important_email(email_body, sender=None, my_email=None):
+    """Determines if an email is important by checking for spam or subscription related keywords.
+    Returns True if no spam keywords are found and the sender is not automated.
+    """
+    spam_keywords = ["unsubscribe", "newsletter", "no-reply", "auto-generated", "promotion", "sale"]
+    if any(keyword.lower() in email_body.lower() for keyword in spam_keywords):
+        return False
+    if sender and ("no-reply" in sender.lower() or "noreply" in sender.lower()):
+        return False
+    if my_email and my_email.lower() in sender.lower():
+        return False
+    return True
+
+
+# Modify the __main__ block to use email importance filtering
 if __name__ == "__main__":
     email_content = """
     Hi John,
@@ -128,15 +144,21 @@ if __name__ == "__main__":
     Best,
     Jane
     """
+    
+    # Added sender info for filtering (assuming email header or sender info is available)
+    sender = "Jane <jane@example.com>"
 
-    # Extract tasks
-    extracted_tasks = extract_tasks(email_content)
+    if is_important_email(email_content, sender, my_email="john@example.com"):
+        # Extract tasks
+        extracted_tasks = extract_tasks(email_content)
 
-    # Extract deadlines
-    normalized_deadlines = extract_deadlines_with_chatgpt(extracted_tasks)
+        # Extract deadlines
+        normalized_deadlines = extract_deadline_with_chatgpt(extracted_tasks)
 
-    # Summarize tasks with deadlines
-    task_summary = summarize_tasks(extracted_tasks)
+        # Summarize tasks with deadlines
+        task_summary = summarize_tasks(extracted_tasks)
 
-    print("\nFinal Summary:\n", task_summary)
-    print("\nDeadline:\n", normalized_deadlines)
+        print("\nFinal Summary:\n", task_summary)
+        print("\nDeadline:\n", normalized_deadlines)
+    else:
+        print("Email is not important; skipping processing.")
