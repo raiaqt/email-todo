@@ -28,7 +28,7 @@ def extract_tasks(email_body):
                 "- If there is **no actionable task**, return this exact string: 'No actionable tasks.'\n\n"
                 "Format example:\n"
                 "Submit the updated sales forecast by May 1st.\n"
-                "Reply to Jane’s question about the budget timeline by April 15th."
+                "Reply to Jane's question about the budget timeline by April 15th."
             )
         },
         {
@@ -37,14 +37,18 @@ def extract_tasks(email_body):
         }
     ]
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        temperature=0.1,
-        max_tokens=1500,
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.1,
+            max_tokens=1500,
+        )
+        tasks = response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        logging.error("Error calling openai API in extract_tasks: %s", e)
+        tasks = "No actionable tasks."
 
-    tasks = response['choices'][0]['message']['content'].strip()
     # logging.debug("Extracted Tasks:\n%s", tasks)
     return tasks
 
@@ -75,15 +79,19 @@ def extract_deadline_with_chatgpt(tasks):
         }
     ]
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        temperature=0.1,
-        max_tokens=150,
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.1,
+            max_tokens=150,
+        )
+        deadlines = response['choices'][0]['message']['content'].strip()
+        logging.debug("Extracted Deadlines:\n%s", deadlines)
+    except Exception as e:
+        logging.error("Error calling openai API in extract_deadline_with_chatgpt: %s", e)
+        deadlines = ""
 
-    deadlines = response['choices'][0]['message']['content'].strip()
-    logging.debug("Extracted Deadlines:\n%s", deadlines)
     return deadlines
 
 
@@ -109,15 +117,19 @@ def summarize_tasks(tasks,):
         }
     ]
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        temperature=0.1,
-        max_tokens=100,  # Ensure brevity
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.1,
+            max_tokens=100,  # Ensure brevity
+        )
+        summary = response['choices'][0]['message']['content'].strip()
+        logging.debug("Task Summary:\n%s", summary)
+    except Exception as e:
+        logging.error("Error calling openai API in summarize_tasks: %s", e)
+        summary = "No summary available."
 
-    summary = response['choices'][0]['message']['content'].strip()
-    logging.debug("Task Summary:\n%s", summary)
     return summary
 
 
