@@ -29,7 +29,7 @@ def fetch_emails(access_token):
     service = build("gmail", "v1", credentials=creds)
 
     # Calculate the date for filtering emails from the past 4 hours
-    four_hours_ago = int((datetime.now(timezone.utc) - timedelta(hours=12)).timestamp())
+    four_hours_ago = int((datetime.now(timezone.utc) - timedelta(hours=5)).timestamp())
     logging.debug("Fetching emails after timestamp: %d", four_hours_ago)
 
     # Use Gmail API to search for emails from the past day

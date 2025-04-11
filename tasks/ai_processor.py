@@ -1,11 +1,13 @@
 import os
 import openai
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 from tasks.utils import is_important_email
 
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
+today_str = datetime.today().strftime('%Y-%m-%d')
+
 
 def extract_tasks(email_body):
     logging.debug("Processing emails...")
@@ -14,15 +16,19 @@ def extract_tasks(email_body):
         {
             "role": "system",
             "content": (
-                "You are an assistant that extracts one actionable task from an email and formats it as a standardized to-do item.\n\n"
-                "Rules:\n"
-                "- The task should start with an **actionable verb** (e.g., Reply, Confirm, Submit, Schedule).\n"
-                "- Keep it **short and clear**, like a task you’d write in a to-do list.\n"
-                "- If the email expects a response (e.g., 'Let me know', 'Please reply', 'Can you confirm?'), treat it as a task like 'Reply to...'.\n"
-                "- Include any **deadlines or details** if explicitly mentioned.\n"
-                "- Do not include irrelevant or redundant information.\n"
-                "- If there’s **no actionable task**, return: 'No actionable tasks.'\n\n"
-                "Format example: Reply to Jane’s request about the event schedule by April 15th."
+                "You are an assistant that extracts **one actionable task** from an email and formats it as a standardized to-do item.\n\n"
+                "Guidelines:\n"
+                "- The task must begin with an **actionable verb** (e.g., Reply, Confirm, Submit, Schedule).\n"
+                "- Keep it **short and clear**, like something you would add to a task list.\n"
+                "- If the email contains a **question** or any **request for a reply** — even subtle phrases like:\n"
+                "  'Let me know', 'Can you confirm?', 'Do you agree?', 'Is that okay with you?', 'What do you think?' —\n"
+                "  then treat it as: 'Reply to sender...'\n"
+                "- These phrases **always** imply an action, even if the word 'reply' is not used.\n"
+                "- Include deadlines or dates if they are mentioned explicitly (e.g., 'by Friday, April 14').\n"
+                "- If there is **no actionable task**, return this exact string: 'No actionable tasks.'\n\n"
+                "Format example:\n"
+                "Submit the updated sales forecast by May 1st.\n"
+                "Reply to Jane’s question about the budget timeline by April 15th."
             )
         },
         {
@@ -54,11 +60,12 @@ def extract_deadline_with_chatgpt(tasks):
          {
             "role": "system",
             "content": (
-                "You are an assistant that extracts a single deadline from a to-do list. "
-                "If there are multiple deadlines, select the most relevant one (e.g., the earliest deadline). "
-                "Convert all vague time expressions like 'tomorrow,' 'next week,' or 'end of the week' into specific dates. "
-                "Return only the date in the format 'YYYY-MM-DD' (e.g., 2025-01-20). "
-                "Do not include any other text or explanations."
+                f"You are an assistant that extracts a single deadline from a to-do list.\n"
+                f"Today's date is {today_str}.\n"
+                "If there are multiple deadlines, select the most relevant one (e.g., the earliest).\n"
+                "Convert all vague expressions like 'tomorrow', 'next week', or 'Friday' into an actual date.\n"
+                "Return only the date in this format: 'YYYY-MM-DD' (e.g., 2025-01-20).\n"
+                "Do not include any explanation or extra text."
             )
         },
         {

@@ -40,7 +40,7 @@ def fetch_and_process_emails():
                 actionable_tasks.append({
                     "subject": email["subject"],
                     "from": email["from"],
-                    "detailed_tasks": detailed_tasks,
+                    # "detailed_tasks": detailed_tasks,
                     "summary": detailed_tasks,
                     "deadline": deadline if deadline else "No deadline"
                 })
