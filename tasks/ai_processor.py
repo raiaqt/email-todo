@@ -2,6 +2,7 @@ import os
 import openai
 from datetime import datetime, timedelta
 import logging
+from tasks.utils import is_important_email
 
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -13,16 +14,15 @@ def extract_tasks(email_body):
         {
             "role": "system",
             "content": (
-                "You are an assistant that extracts actionable tasks from emails and formats them as a standardized to-do list. "
-                "Each task should be a concise numbered list starting with an actionable verb. "
-                "Each task should be a short simple sentence. "
-                "Include any relevant deadlines or details if mentioned. "
-                "Do not include irrelevant or redundant details. "
-                "If no actionable tasks are found, respond with 'No actionable tasks'. "
-                "Format example:\n"
-                "1. Submit the project report by January 20th.\n"
-                "2. Schedule a meeting with the marketing team for next week.\n"
-                "3. Follow up with the client regarding the contract terms.\n"
+                "You are an assistant that extracts one actionable task from an email and formats it as a standardized to-do item.\n\n"
+                "Rules:\n"
+                "- The task should start with an **actionable verb** (e.g., Reply, Confirm, Submit, Schedule).\n"
+                "- Keep it **short and clear**, like a task you’d write in a to-do list.\n"
+                "- If the email expects a response (e.g., 'Let me know', 'Please reply', 'Can you confirm?'), treat it as a task like 'Reply to...'.\n"
+                "- Include any **deadlines or details** if explicitly mentioned.\n"
+                "- Do not include irrelevant or redundant information.\n"
+                "- If there’s **no actionable task**, return: 'No actionable tasks.'\n\n"
+                "Format example: Reply to Jane’s request about the event schedule by April 15th."
             )
         },
         {
@@ -39,7 +39,7 @@ def extract_tasks(email_body):
     )
 
     tasks = response['choices'][0]['message']['content'].strip()
-    logging.debug("Extracted Tasks:\n%s", tasks)
+    # logging.debug("Extracted Tasks:\n%s", tasks)
     return tasks
 
 
@@ -113,21 +113,6 @@ def summarize_tasks(tasks,):
     return summary
 
 
-# NEW FUNCTION: Filter emails based on importance
-def is_important_email(email_body, sender=None, my_email=None):
-    """Determines if an email is important by checking for spam or subscription related keywords.
-    Returns True if no spam keywords are found and the sender is not automated.
-    """
-    spam_keywords = ["unsubscribe", "newsletter", "no-reply", "auto-generated", "promotion", "sale"]
-    if any(keyword.lower() in email_body.lower() for keyword in spam_keywords):
-        return False
-    if sender and ("no-reply" in sender.lower() or "noreply" in sender.lower()):
-        return False
-    if my_email and my_email.lower() in sender.lower():
-        return False
-    return True
-
-
 # Modify the __main__ block to use email importance filtering
 if __name__ == "__main__":
     email_content = """
@@ -153,12 +138,13 @@ if __name__ == "__main__":
         extracted_tasks = extract_tasks(email_content)
 
         # Extract deadlines
-        normalized_deadlines = extract_deadline_with_chatgpt(extracted_tasks)
+        # normalized_deadlines = extract_deadline_with_chatgpt(extracted_tasks)
+        normalized_deadlines = "N/A"
 
         # Summarize tasks with deadlines
-        task_summary = summarize_tasks(extracted_tasks)
+        # task_summary = summarize_tasks(extracted_tasks)
 
-        print("\nFinal Summary:\n", task_summary)
+        print("\nFinal Summary:\n", extracted_tasks)
         print("\nDeadline:\n", normalized_deadlines)
     else:
         print("Email is not important; skipping processing.")

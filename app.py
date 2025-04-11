@@ -35,13 +35,13 @@ def fetch_and_process_emails():
             logging.debug("Processing email from: %s with subject: %s", email.get("from"), email.get("subject"))
             detailed_tasks = extract_tasks(email["body"])  # Extract detailed tasks
             if "No actionable tasks" not in detailed_tasks:  # Filter out non-actionable tasks
-                summary = summarize_tasks(detailed_tasks)  # Summarize the email's tasks
+                # summary = summarize_tasks(detailed_tasks)  # Summarize the email's tasks
                 deadline = extract_deadline_with_chatgpt(detailed_tasks)  # Extract deadline
                 actionable_tasks.append({
                     "subject": email["subject"],
                     "from": email["from"],
                     "detailed_tasks": detailed_tasks,
-                    "summary": summary,
+                    "summary": detailed_tasks,
                     "deadline": deadline if deadline else "No deadline"
                 })
 

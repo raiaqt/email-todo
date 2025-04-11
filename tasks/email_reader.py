@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import logging
+import json
+from tasks.utils import is_important_email
 
 # Scopes required for Gmail API
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -26,15 +28,15 @@ def fetch_emails(access_token):
     # Build the Gmail API client
     service = build("gmail", "v1", credentials=creds)
 
-    # Calculate the date for filtering emails from the past day
-    one_day_ago = int((datetime.now(timezone.utc) - timedelta(days=1)).timestamp())
-    logging.debug("Fetching emails after timestamp: %d", one_day_ago)
+    # Calculate the date for filtering emails from the past 4 hours
+    four_hours_ago = int((datetime.now(timezone.utc) - timedelta(hours=12)).timestamp())
+    logging.debug("Fetching emails after timestamp: %d", four_hours_ago)
 
     # Use Gmail API to search for emails from the past day
     try:
         results = service.users().messages().list(
             userId="me",
-            q=f"after:{one_day_ago}"
+            q=f"after:{four_hours_ago}"
         ).execute()
 
         messages = results.get("messages", [])
@@ -44,7 +46,7 @@ def fetch_emails(access_token):
 
         emails = []
         for msg in messages:
-            logging.debug("Processing message with id: %s", msg["id"])
+            # logging.debug("Processing message with id: %s", msg["id"])
             # Fetch email details
             msg_data = service.users().messages().get(userId="me", id=msg["id"]).execute()
             
@@ -54,7 +56,7 @@ def fetch_emails(access_token):
             sender = next((h["value"] for h in headers if h["name"] == "From"), "Unknown Sender")
             date_str = next((h["value"] for h in headers if h["name"] == "Date"), None)
             size = int(msg_data.get("sizeEstimate", 0))
-            logging.debug("Email details - Subject: %s, From: %s, Date: %s, Size: %d", subject, sender, date_str if date_str else "None", size)
+            # logging.debug("Email details - Subject: %s, From: %s, Date: %s, Size: %d", subject, sender, date_str if date_str else "None", size)
 
             # Parse the email date
             email_time = datetime.now(timezone.utc)
@@ -70,7 +72,7 @@ def fetch_emails(access_token):
                 for part in msg_data["payload"]["parts"]:
                     if part.get("mimeType") == "text/plain":
                         body = base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8", errors="ignore")
-                        logging.debug("Decoded email body for message id: %s", msg["id"])
+                        # logging.debug("Decoded email body for message id: %s", msg["id"])
                         break
 
             # Append to the email list
@@ -83,7 +85,14 @@ def fetch_emails(access_token):
             })
 
         logging.info("Fetched %d emails.", len(emails))
-        return emails[:10]
+        important_emails = [email for email in emails if is_important_email(email["subject"], email["body"], sender=email["from"])]
+        unimportant_emails = [email for email in emails if not is_important_email(email["subject"], email["body"], sender=email["from"])]
+        logging.info("Important emails (%d):", len(important_emails))
+        for email in unimportant_emails:
+            logging.info("Unimportant Email: %s", json.dumps(email["subject"]))
+        for email in important_emails:
+            logging.info("Important Email: %s", json.dumps(email["subject"]))
+        return important_emails
 
     except Exception as e:
         logging.error("An error occurred while fetching emails: %s", str(e))
@@ -91,6 +100,7 @@ def fetch_emails(access_token):
 
 # Example usage
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     # Set your access token here (replace with actual token)
     ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
     if not ACCESS_TOKEN:
@@ -100,7 +110,4 @@ if __name__ == "__main__":
         emails = fetch_emails(ACCESS_TOKEN)
         logging.info("Processing %d emails in main block.", len(emails))
         for email_data in emails:
-            logging.info("Subject: %s", email_data['subject'])
-            logging.info("From: %s", email_data['from'])
-            logging.info("Size: %d bytes", email_data['size'])
-            logging.info("%s", "-" * 50)
+            logging.info("Email => Subject: %s | From: %s | Size: %d bytes", email_data['subject'], email_data['from'], email_data['size'])
