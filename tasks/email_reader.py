@@ -34,11 +34,11 @@ def fetch_emails(access_token, last_updated=None):
             last_updated_dt = datetime.strptime(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
         except ValueError:
             logging.warning("Unable to parse last_updated: %s. Defaulting to 12 hours ago.", last_updated)
-            last_updated_dt = datetime.now(timezone.utc) - timedelta(hours=6)
+            last_updated_dt = datetime.now(timezone.utc) - timedelta(hours=2)
     else:
         last_updated_dt = None
 
-    twelve_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
+    twelve_hours_ago = datetime.now(timezone.utc) - timedelta(hours=2)
     if last_updated_dt:
         effective_dt = max(last_updated_dt, twelve_hours_ago)
     else:
