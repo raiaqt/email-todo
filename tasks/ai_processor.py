@@ -65,7 +65,8 @@ def extract_deadline_with_chatgpt(tasks):
                 "If there are multiple deadlines, select the most relevant one (e.g., the earliest).\n"
                 "Convert all vague expressions like 'tomorrow', 'next week', or 'Friday' into an actual date.\n"
                 "Return only the date in this format: 'YYYY-MM-DD' (e.g., 2025-01-20).\n"
-                "Do not include any explanation or extra text."
+                "Do not include any explanation or extra text.\n"
+                "Never return a date earlier than today. If a deadline has passed, ignore it and return no deadline."
             )
         },
         {

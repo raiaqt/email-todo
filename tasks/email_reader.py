@@ -13,7 +13,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TOKEN_URI = os.getenv("TOKEN_URI")
 
-def fetch_emails(access_token):
+def fetch_emails(access_token, last_updated=None):
     logging.debug("Fetching emails using provided access token.")
 
     # Create credentials from the access token
@@ -28,15 +28,30 @@ def fetch_emails(access_token):
     # Build the Gmail API client
     service = build("gmail", "v1", credentials=creds)
 
-    # Calculate the date for filtering emails from the past 4 hours
-    four_hours_ago = int((datetime.now(timezone.utc) - timedelta(hours=5)).timestamp())
-    logging.debug("Fetching emails after timestamp: %d", four_hours_ago)
+    # Determine the threshold for fetching emails
+    if last_updated:
+        try:
+            last_updated_dt = datetime.strptime(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+        except ValueError:
+            logging.warning("Unable to parse last_updated: %s. Defaulting to 12 hours ago.", last_updated)
+            last_updated_dt = datetime.now(timezone.utc) - timedelta(hours=12)
+    else:
+        last_updated_dt = None
+
+    twelve_hours_ago = datetime.now(timezone.utc) - timedelta(hours=12)
+    if last_updated_dt:
+        effective_dt = max(last_updated_dt, twelve_hours_ago)
+    else:
+        effective_dt = twelve_hours_ago
+
+    effective_timestamp = int(effective_dt.timestamp())
+    logging.debug("Fetching emails after timestamp: %d", effective_timestamp)
 
     # Use Gmail API to search for emails from the past day
     try:
         results = service.users().messages().list(
             userId="me",
-            q=f"after:{four_hours_ago}"
+            q=f"after:{effective_timestamp}"
         ).execute()
 
         messages = results.get("messages", [])
