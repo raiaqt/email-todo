@@ -3,6 +3,7 @@ import base64
 from datetime import datetime, timedelta, timezone
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 import logging
 import json
 from tasks.utils import is_important_email
@@ -13,13 +14,13 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TOKEN_URI = os.getenv("TOKEN_URI")
 
-def fetch_emails(access_token, last_updated=None):
+def fetch_emails(access_token, refresh_token, last_updated=None):
     logging.debug("Fetching emails using provided access token.")
 
     # Create credentials from the access token
     creds = Credentials(
         token=access_token,
-        # refresh_token=refresh_token,
+        refresh_token=refresh_token,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         token_uri=TOKEN_URI
@@ -109,6 +110,13 @@ def fetch_emails(access_token, last_updated=None):
             logging.info("Important Email: %s", json.dumps(email["subject"]))
         return important_emails
 
+    except HttpError as e:
+        if e.resp.status == 401:
+            logging.error("Unauthorized: Invalid access token.")
+            return {"error": "Unauthorized", "status": 401}
+        else:
+            logging.error("An error occurred while fetching emails: %s", str(e))
+            return []
     except Exception as e:
         logging.error("An error occurred while fetching emails: %s", str(e))
         return []
