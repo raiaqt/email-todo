@@ -2,6 +2,9 @@ import re
 
 def is_important_email(email_subject, email_body, sender=None, my_email=None):
     """Determines if an email is important by checking for spam or subscription-related keywords."""
+    if email_subject.strip().lower() == "new task from sortify":
+        return True
+
     spam_keywords = [
         "unsubscribe", "newsletter", "no-reply", "auto-generated",
         "promotion", "promotions", "sale", "social",
