@@ -9,6 +9,7 @@ import logging
 import smtplib
 
 logging.basicConfig(level=logging.DEBUG)
+gmail_user = os.getenv("EMAIL_ADDRESS")
 
 app = Flask(__name__)
 CORS(app)
@@ -39,7 +40,7 @@ def fetch_and_process_emails():
         actionable_tasks = []
         for email in emails:
             logging.debug("Processing email from: %s with subject: %s", email.get("from"), email.get("subject"))
-            if email.get("subject").lower() == "new task from sortify":
+            if email.get("from") and gmail_user in email.get("from"):
                 detailed_tasks, deadline = extract_sortify_task(email["body"])
                 actionable_tasks.append({
                     "subject": email["subject"],
@@ -91,7 +92,7 @@ def fetch_old_emails():
         actionable_tasks = []
         for email in emails:
             logging.debug("Processing email from: %s with subject: %s", email.get("from"), email.get("subject"))
-            if email.get("subject").lower() == "new task from sortify":
+            if email.get("from") and gmail_user in email.get("from"):
                 detailed_tasks, deadline = extract_sortify_task(email["body"])
                 actionable_tasks.append({
                     "subject": email["subject"],
@@ -128,10 +129,10 @@ def send_email():
         deadline = data.get("deadline")
         task = data.get("task")
         
-        if not all([sender_name, sender_email, recepient_email, deadline, task]):
+        if not all([sender_name, sender_email, recepient_email, task]):
             return jsonify({"error": "All fields are required."}), 400
         
-        send_email_via_smtp(sender_name, sender_email, recepient_email, deadline, task)
+        send_email_via_smtp(sender_name, sender_email, recepient_email, deadline="No deadline", task=task)
         
         return jsonify({"message": "Email sent successfully."})
     except Exception as e:

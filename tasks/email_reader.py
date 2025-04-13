@@ -52,7 +52,7 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
     try:
         results = service.users().messages().list(
             userId="me",
-            q=f"after:{effective_timestamp}"
+            q=f"after:{effective_timestamp} in:inbox"
         ).execute()
 
         messages = results.get("messages", [])
@@ -91,6 +91,7 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
                         # logging.debug("Decoded email body for message id: %s", msg["id"])
                         break
 
+            logging.info("SENDER: %s", sender)
             # Append to the email list
             emails.append({
                 "subject": subject,
