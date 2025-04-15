@@ -29,17 +29,19 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
     # Build the Gmail API client
     service = build("gmail", "v1", credentials=creds)
 
+    days_ago = 3
+
     # Determine the threshold for fetching emails
     if last_updated:
         try:
             last_updated_dt = datetime.strptime(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
         except ValueError:
             logging.warning("Unable to parse last_updated: %s. Defaulting to 3 days ago.", last_updated)
-            last_updated_dt = datetime.now(timezone.utc) - timedelta(days=3)
+            last_updated_dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
     else:
         last_updated_dt = None
 
-    three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
+    three_days_ago = datetime.now(timezone.utc) - timedelta(days=days_ago)
     if last_updated_dt:
         effective_dt = max(last_updated_dt, three_days_ago)
     else:

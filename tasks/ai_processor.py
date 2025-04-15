@@ -3,6 +3,8 @@ import openai
 from datetime import datetime
 import logging
 from tasks.utils import is_important_email
+from tasks.prompt import prompt
+import re
 
 # Set OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -15,21 +17,7 @@ def extract_tasks(email_body):
     messages = [
         {
             "role": "system",
-            "content": (
-                "You are an assistant that extracts **one actionable task** from an email and formats it as a standardized to-do item.\n\n"
-                "Guidelines:\n"
-                "- The task must begin with an **actionable verb** (e.g., Reply, Confirm, Submit, Schedule).\n"
-                "- Keep it **short and clear**, like something you would add to a task list.\n"
-                "- If the email contains a **question** or any **request for a reply** — even subtle phrases like:\n"
-                "  'Let me know', 'Can you confirm?', 'Do you agree?', 'Is that okay with you?', 'What do you think?' —\n"
-                "  then treat it as: 'Reply to sender...'\n"
-                "- These phrases **always** imply an action, even if the word 'reply' is not used.\n"
-                "- Include deadlines or dates if they are mentioned explicitly (e.g., 'by Friday, April 14').\n"
-                "- If there is **no actionable task**, return this exact string: 'No actionable tasks.'\n\n"
-                "Format example:\n"
-                "Submit the updated sales forecast by May 1st.\n"
-                "Reply to Jane's question about the budget timeline by April 15th."
-            )
+            "content": prompt
         },
         {
             "role": "user",
@@ -42,7 +30,7 @@ def extract_tasks(email_body):
             model="gpt-3.5-turbo",
             messages=messages,
             temperature=0.1,
-            max_tokens=1500,
+            max_tokens=500,
         )
         tasks = response['choices'][0]['message']['content'].strip()
     except Exception as e:
@@ -50,7 +38,8 @@ def extract_tasks(email_body):
         tasks = "No actionable tasks."
 
     # logging.debug("Extracted Tasks:\n%s", tasks)
-    return tasks
+    cleaned_task = re.sub(r'(\*\*|\*)', '', tasks)
+    return cleaned_task
 
 
 def extract_deadline_with_chatgpt(tasks):
