@@ -124,15 +124,14 @@ def send_email():
     try:
         data = request.json
         sender_name = data.get("sender_name")
-        sender_email = data.get("sender_email")
         recepient_email = data.get("recepient_email")
         deadline = data.get("deadline")
         task = data.get("task")
         
-        if not all([sender_name, sender_email, recepient_email, task]):
+        if not all([sender_name, recepient_email, task]):
             return jsonify({"error": "All fields are required."}), 400
         
-        send_email_via_smtp(sender_name, sender_email, recepient_email, deadline="No deadline", task=task)
+        send_email_via_smtp(sender_name, recepient_email, deadline, task)
         
         return jsonify({"message": "Email sent successfully."})
     except Exception as e:

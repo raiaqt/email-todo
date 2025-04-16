@@ -7,17 +7,20 @@ from email.utils import formatdate
 gmail_user = os.getenv("EMAIL_ADDRESS")
 gmail_app_password = os.getenv("EMAIL_PASSWORD")
 
-def send_email_via_smtp(sender_name, sender_email, recipient_email, deadline, task):
+def send_email_via_smtp(sender_name, recipient_email, deadline, task):
     if not gmail_user or not gmail_app_password:
         raise Exception("SMTP credentials not set in environment variables.")
 
     subject = f"You’ve got a task from {sender_name}"
 
+    if deadline==None:
+        deadline = "No deadline"
+
     # Plain text version
     text_body = f"""
 Hi there,
 
-{sender_name} ({sender_email}) just shared a task with you via Sortify:
+{sender_name} just shared a task with you via Sortify:
 
 Task: {task}
 Due: {deadline}
@@ -32,7 +35,7 @@ Thanks for using Sortify!
 <html>
   <body>
     <p>Hi there,</p>
-    <p><strong>{sender_name}</strong> ({sender_email}) just shared a task with you via <strong>Sortify</strong>:</p>
+    <p><strong>{sender_name}</strong> just shared a task with you via <strong>Sortify</strong>:</p>
     <ul>
       <li><strong>Task:</strong> {task}</li>
       <li><strong>Due:</strong> {deadline}</li>

@@ -28,7 +28,7 @@ def extract_sortify_task(email_body: str):
         line = line.strip()
 
         # Match the sender line
-        match_sender = re.match(r"^(.*) \((.*)\) just shared a task", line)
+        match_sender = re.match(r"^(.*) just shared a task", line)
         if match_sender:
             sender = match_sender.group(1).strip()
 

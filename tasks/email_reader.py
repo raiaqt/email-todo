@@ -108,9 +108,9 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
         unimportant_emails = [email for email in emails if not is_important_email(email["subject"], email["body"], sender=email["from"])]
         logging.info("Important emails (%d):", len(important_emails))
         for email in unimportant_emails:
-            logging.info("Unimportant Email: %s", json.dumps(email["body"]))
+            logging.info("Unimportant Email: %s", json.dumps(email["subject"]))
         for email in important_emails:
-            logging.info("Important Email: %s", json.dumps(email["body"]))
+            logging.info("Important Email: %s", json.dumps(email["subject"]))
         return important_emails
 
     except HttpError as e:
