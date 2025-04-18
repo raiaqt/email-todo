@@ -14,7 +14,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TOKEN_URI = os.getenv("TOKEN_URI")
 
-def fetch_emails(access_token, refresh_token, last_updated=None):
+def fetch_emails(access_token, refresh_token, fetch_from, fetch_to):
     logging.debug("Fetching emails using provided access token.")
 
     # Create credentials from the access token
@@ -29,32 +29,27 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
     # Build the Gmail API client
     service = build("gmail", "v1", credentials=creds)
 
-    days_ago = 3
+    try:
+        fetch_from_dt = datetime.strptime(fetch_from, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        logging.warning("Unable to parse fetch_from: %s. Defaulting to 3 days ago.", fetch_from)
+        fetch_from_dt = datetime.now(timezone.utc) - timedelta(days=3)
 
-    # Determine the threshold for fetching emails
-    if last_updated:
-        try:
-            last_updated_dt = datetime.strptime(last_updated, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-        except ValueError:
-            logging.warning("Unable to parse last_updated: %s. Defaulting to 3 days ago.", last_updated)
-            last_updated_dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
-    else:
-        last_updated_dt = None
+    try:
+        fetch_to_dt = datetime.strptime(fetch_to, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        logging.warning("Unable to parse fetch_to: %s. Defaulting to now.", fetch_to)
+        fetch_to_dt = datetime.now(timezone.utc)
 
-    three_days_ago = datetime.now(timezone.utc) - timedelta(days=days_ago)
-    if last_updated_dt:
-        effective_dt = max(last_updated_dt, three_days_ago)
-    else:
-        effective_dt = three_days_ago
-
-    effective_timestamp = int(effective_dt.timestamp())
-    logging.debug("Fetching emails after timestamp: %d", effective_timestamp)
+    fetch_from_ts = int(fetch_from_dt.timestamp())
+    fetch_to_ts = int(fetch_to_dt.timestamp())
+    logging.debug("Fetching emails between timestamps: %d and %d", fetch_from_ts, fetch_to_ts)
 
     # Use Gmail API to search for emails from the past day
     try:
         results = service.users().messages().list(
             userId="me",
-            q=f"after:{effective_timestamp} in:inbox"
+            q=f"after:{fetch_from_ts} before:{fetch_to_ts} in:inbox"
         ).execute()
 
         messages = results.get("messages", [])
@@ -127,13 +122,17 @@ def fetch_emails(access_token, refresh_token, last_updated=None):
 # Example usage
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    # Set your access token here (replace with actual token)
     ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+    REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
     if not ACCESS_TOKEN:
         logging.error("Please set the ACCESS_TOKEN environment variable.")
+    elif not REFRESH_TOKEN:
+        logging.error("Please set the REFRESH_TOKEN environment variable.")
     else:
+        default_fetch_from = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        default_fetch_to = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         logging.info("Access token found; fetching emails.")
-        emails = fetch_emails(ACCESS_TOKEN)
+        emails = fetch_emails(ACCESS_TOKEN, REFRESH_TOKEN, default_fetch_from, default_fetch_to)
         logging.info("Processing %d emails in main block.", len(emails))
         for email_data in emails:
             logging.info("Email => Subject: %s | From: %s | Size: %d bytes", email_data['subject'], email_data['from'], email_data['size'])

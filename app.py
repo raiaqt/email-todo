@@ -25,15 +25,15 @@ def fetch_and_process_emails():
         data = request.json
         access_token = data.get("access_token")
         refresh_token = data.get("refresh_token")
-        last_updated = data.get("last_updated")
+        fetch_from = data.get("fetch_from")
+        fetch_to = data.get("fetch_to")
         logging.debug("Received fetch_emails request; access token provided: %s", bool(access_token))
         
-        logging.info(last_updated)
         if not access_token:
             return jsonify({"error": "Access token is required."}), 401
         
         # Step 1: Fetch emails
-        emails = fetch_emails(access_token, refresh_token, last_updated)
+        emails = fetch_emails(access_token, refresh_token, fetch_from, fetch_to)
         logging.debug("Fetched %d emails from Gmail API", len(emails))
 
         # Step 2: Process each email
